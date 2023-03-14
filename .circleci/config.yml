@@ -96,7 +96,12 @@ jobs:
       - image: python:3.7-alpine3.11
     steps:
       - checkout
-      - install-awscli
+      - run:
+          name: install dependencies
+          command: |
+            apk update && apk add --update tar gzip curl      
+            pip install --upgrade awscli
+            aws --version
       - install-eksctl
       - install-kubectl
       - run:
