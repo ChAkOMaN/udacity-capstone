@@ -8,7 +8,7 @@ docker build --tag=udacity-capstone .
 
 # Step 2: 
 # List docker images
-docker images ls
+docker images
 
 # Step 3: 
 # Run flask app

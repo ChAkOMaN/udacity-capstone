@@ -1,10 +1,53 @@
 version: 2.1
 
+commands: 
+  install-awscli:
+    description: Install awscli
+    steps:
+      - run: 
+          name: Install aws cli
+          command: |
+            apk add --update tar gzip  curl
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            ./aws/install
+            aws --version
+
+  install-eksctl:
+    description: Install eksctl tools
+    steps:
+      - run: 
+          name: Install eksctl
+          command: |
+            curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+            sudo mv /tmp/eksctl /usr/local/bin
+            eksctl version
+            aws --version
+            
+  install-kubectl:
+    description: Install kubectl tools
+    steps:
+      - run: 
+          name: Install kubectl
+          command: |           
+            curl -o kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.22.6/2022-03-09/bin/linux/amd64/kubectl
+            chmod +x ./kubectl
+            mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$PATH:$HOME/bin
+            kubectl version --client
+
+  destroy-environment:
+    description: Destroy EKS cluster.    
+    steps:
+      - run:
+          name: Destroy cluster
+          when: on_fail
+          command: |
+            eksctl delete cluster --name=capstone-eks-cluster-${CIRCLE_WORKFLOW_ID:0:7} --region=us-east-1          
+
 jobs:
   lint-code:
     docker:
       - image: python:3.7.3-stretch
-
     working_directory: ~/repo
     steps:
       - checkout
@@ -48,9 +91,35 @@ jobs:
           command: |
             bash push_docker.sh
 
+  deploy-eks:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - install-awscli
+      - install-eksctl
+      - install-kubectl
+      - run:
+          name: create aws eks cluster
+          command: |
+            aws sts get-caller-identity
+            eksctl create cluster --name capstone-eks-cluster-${CIRCLE_WORKFLOW_ID:0:7} --region=us-east-1 --zones us-east-1a,us-east-1b,us-east-1c,us-east-1d
+            eksctl utils describe-stacks --region=us-east-1 --cluster=capstone-eks-cluster-${CIRCLE_WORKFLOW_ID:0:7}
+            eksctl get cluster --name=capstone-eks-cluster-${CIRCLE_WORKFLOW_ID:0:7} --region=us-east-1
+      - run:
+          name: deploy app
+          command: |
+            kubectl get nodes
+            kubectl create deployment udacity-capstone --image=chakoman/udacity-capstone &&
+              kubectl expose deployment/udacity-capstone --type="LoadBalancer" --port 80
+            kubectl get deployments,rs,svc,pods
+      - destroy-environment
+
 workflows:
   deployment:
     jobs:
-      - lint-code 
+      - lint-code
       - build-docker:
           requires: [lint-code]
+      - deploy-eks:
+          requires: [build-docker]
