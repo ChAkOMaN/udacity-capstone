@@ -28,21 +28,21 @@ jobs:
             . venv/bin/activate
             make lint 
 
-    build-docker:
-      docker:
-        - image: docker:latest
-      working_directory: ~/repo
-      steps:
-        - checkout
-        - setup_remote_docker
-        - run:
-            name: build docker image
-            command: |
-              ./build_docker.sh
-        - run:
-            name: push docker image
-            command: |
-              ./push_docker.sh
+  build-docker:
+    docker:
+      - image: docker:latest
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: build docker image
+          command: |
+            ./build_docker.sh
+      - run:
+          name: push docker image
+          command: |
+            ./push_docker.sh
 
 workflows:
   deployment:
