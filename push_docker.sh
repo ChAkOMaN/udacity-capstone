@@ -9,8 +9,7 @@ dockerpath=chakoman/udacity-capstone
 # Step 2:  
 # Authenticate & tag
 echo "Docker ID and Image: $dockerpath"
-#docker login -u $DOCKER_LOGIN -p $DOCKER_PASSWORD
-docker login -u chakoman
+docker login -u $DOCKER_LOGIN -p $DOCKER_PASSWORD
 docker tag udacity-capstone $dockerpath
 
 # Step 3:
