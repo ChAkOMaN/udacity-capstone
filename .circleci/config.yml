@@ -36,16 +36,21 @@ jobs:
       - checkout
       - setup_remote_docker
       - run:
+          name: install dependencies
+          command: |
+            apk update && apk add bash      
+      - run:
           name: build docker image
           command: |
-            ./build_docker.sh
+            bash build_docker.sh
       - run:
           name: push docker image
           command: |
-            ./push_docker.sh
+            bash push_docker.sh
 
 workflows:
   deployment:
     jobs:
       - lint-code 
-      - build-docker
+      - build-docker:
+          requires: [lint-code]
