@@ -123,10 +123,12 @@ jobs:
           name: smoke-test
           command: |
             kubectl get nodes
-            kubectl get deployments,rs,svc,pods
-            kubectl get svc -o jsonpath='{$.items[*].status.loadBalancer}' | cut -b 26-68
-            kubectl get svc -o custom-columns="NAME:.metadata.name,IP ADDRESS:.status.loadBalancer.ingress[*].ip"    
-      - destroy-environment
+            kubectl get deployments,rs,svc
+            kubectl get pods --all-namespaces
+            kubectl config view 
+            #kubectl get svc -o jsonpath='{$.items[*].status.loadBalancer}' | cut -b 26-68
+            #kubectl get svc -o custom-columns="NAME:.metadata.name,IP ADDRESS:.status.loadBalancer.ingress[*].ip"    
+      #- destroy-environment
 
   rolling-deployment-eks:
     docker:
@@ -156,5 +158,5 @@ workflows:
           requires: [build-docker]
       - app-smoke-test:   
           requires: [deploy-eks]
-      - rolling-deployment-eks:   
-          requires: [app-smoke-test]
+      # - rolling-deployment-eks:   
+      #     requires: [app-smoke-test]
