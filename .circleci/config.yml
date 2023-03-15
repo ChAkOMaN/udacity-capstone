@@ -145,6 +145,7 @@ jobs:
       - run:
           name: store app's endpoint
           command: |
+            aws eks update-kubeconfig --name capstone-cluster-e51ed24 --region=us-east-1
             kubectl get services
             kubectl get services udacity-capstone-init --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
             api=$(kubectl get services udacity-capstone-init --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
