@@ -1,6 +1,16 @@
 version: 2.1
 
 commands: 
+  install-awscli:
+    description: Install awscli tools
+    steps:
+      - run: 
+          name: Install awscli
+          command: |    
+            apk update && apk add --update tar gzip curl      
+            pip install --upgrade awscli
+            aws --version
+
   install-eksctl:
     description: Install eksctl tools
     steps:
@@ -82,12 +92,7 @@ jobs:
       - image: python:3.7-alpine3.11
     steps:
       - checkout
-      - run:
-          name: install dependencies
-          command: |
-            apk update && apk add --update tar gzip curl      
-            pip install --upgrade awscli
-            aws --version
+      - install-awscli
       - install-eksctl
       - install-kubectl
       - run:
@@ -104,7 +109,42 @@ jobs:
             kubectl create deployment udacity-capstone --image=chakoman/udacity-capstone &&
               kubectl expose deployment/udacity-capstone --type="LoadBalancer" --port 80
             kubectl get deployments,rs,svc,pods
-      #- destroy-environment
+      - destroy-environment
+
+  app-smoke-test:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - install-awscli
+      - install-eksctl
+      - install-kubectl
+      - run:
+          name: smoke-test
+          command: |
+            kubectl get nodes
+            kubectl get deployments,rs,svc,pods
+            kubectl get svc -o jsonpath='{$.items[*].status.loadBalancer}' | cut -b 26-68
+            kubectl get svc -o custom-columns="NAME:.metadata.name,IP ADDRESS:.status.loadBalancer.ingress[*].ip"    
+      - destroy-environment
+
+  rolling-deployment-eks:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - install-awscli
+      - install-eksctl
+      - install-kubectl
+      - run:
+          name: rolling-deployment
+          command: |  
+            kubectl rollout restart deployment udacity-capstone
+            kubectl rollout history deployment/capstone
+            kubectl get nodes
+            kubectl get deployments,rs,svc,pods    
+            kubectl get svc -o jsonpath='{ $.items[*].status.loadBalancer}' | cut -b 26-68        
+      - destroy-environment                    
 
 workflows:
   deployment:
@@ -114,3 +154,7 @@ workflows:
           requires: [lint-code]
       - deploy-eks:
           requires: [build-docker]
+      - app-smoke-test:   
+          requires: [deploy-eks]
+      - rolling-deployment-eks:   
+          requires: [app-smoke-test]
