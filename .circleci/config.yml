@@ -149,12 +149,12 @@ jobs:
             kubectl get services
             api1=$(kubectl get services udacity-capstone-init --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
             echo 'udacity-capstone-init: ' $api1
-            echo $api1 >> app-init-endpoint.txt            
-            cat app-init-endpoint.txt
+            echo $api1 >> .circleci/files/app-init-endpoint.txt            
+            cat .circleci/files/app-init-endpoint.txt
             api2=$(kubectl get services udacity-capstone-final --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
             echo 'udacity-capstone-final: ' $api2
-            echo $api2 >> app-final-endpoint.txt
-            cat app-final-endpoint.txt            
+            echo $api2 >> .circleci/files/app-final-endpoint.txt
+            cat .circleci/files/app-final-endpoint.txt            
       - persist_to_workspace:
           root: ~/
           paths:
