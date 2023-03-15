@@ -4,13 +4,13 @@
 
 # Step 1:
 # Create dockerpath
-dockerpath=chakoman/udacity-capstone
+dockerpath=chakoman/udacity-capstone-final
 
 # Step 2:  
 # Authenticate & tag
 echo "Docker ID and Image: $dockerpath"
 docker login -u $DOCKER_LOGIN -p $DOCKER_PASSWORD
-docker tag udacity-capstone $dockerpath
+docker tag udacity-capstone-final $dockerpath
 
 # Step 3:
 # Push image to a docker repository

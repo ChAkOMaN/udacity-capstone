@@ -103,50 +103,67 @@ jobs:
             eksctl utils describe-stacks --region=us-east-1 --cluster=capstone-eks-cluster-${CIRCLE_WORKFLOW_ID:0:7}
             eksctl get cluster --name=capstone-eks-cluster-${CIRCLE_WORKFLOW_ID:0:7} --region=us-east-1
       - run:
-          name: deploy app
+          name: deploy app init
           command: |
             kubectl get nodes
             kubectl create deployment udacity-capstone --image=chakoman/udacity-capstone &&
-              kubectl expose deployment/udacity-capstone --type="LoadBalancer" --port 80
-            kubectl get deployments,rs,svc,pods
-      - destroy-environment
+              kubectl expose deployment/udacity-capstone --type="LoadBalancer" --name=udacity-capstone-init --port 80
+            sleep 1m            
+      - run:
+          name: deploy app final
+          command: |
+            kubectl get nodes
+            kubectl create deployment udacity-capstone-final --image=chakoman/udacity-capstone-final &&
+              kubectl expose deployment/udacity-capstone-final --type="LoadBalancer" --name=udacity-capstone-final --port 80
+            sleep 1m 
+            kubectl get deployments,rs,svc,pods        
+      - run:
+          name: store app's endpoint
+          command: |
+            kubectl get services
+            api=$(kubectl get services udacity-capstone-init --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+            echo $api >> app-init-endpoint.txt
+            cat app-init-endpoint.txt
+            api=$(kubectl get services udacity-capstone-final --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+            echo $api >> app-final-endpoint.txt
+            cat app-final-endpoint.txt            
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project/.circleci/files/app-init-endpoint.txt  
+            - project/.circleci/files/app-final-endpoint.txt              
+      #- destroy-environment
 
   app-smoke-test:
     docker:
       - image: python:3.7-alpine3.11
     steps:
       - checkout
+      - attach_workspace:
+          at: ~/      
       - install-awscli
-      - install-eksctl
-      - install-kubectl
       - run:
-          name: smoke-test
+          name: show app's endpoint
           command: |
-            kubectl get nodes
-            kubectl get deployments,rs,svc
-            kubectl get pods --all-namespaces
-            kubectl config view 
-            #kubectl get svc -o jsonpath='{$.items[*].status.loadBalancer}' | cut -b 26-68
-            #kubectl get svc -o custom-columns="NAME:.metadata.name,IP ADDRESS:.status.loadBalancer.ingress[*].ip"    
-      #- destroy-environment
-
-  rolling-deployment-eks:
-    docker:
-      - image: python:3.7-alpine3.11
-    steps:
-      - checkout
-      - install-awscli
-      - install-eksctl
-      - install-kubectl
+            cd .circleci/files
+            cat app-init-endpoint.txt
+            cat app-final-endpoint.txt 
       - run:
-          name: rolling-deployment
-          command: |  
-            kubectl rollout restart deployment udacity-capstone
-            kubectl rollout history deployment/capstone
-            kubectl get nodes
-            kubectl get deployments,rs,svc,pods    
-            kubectl get svc -o jsonpath='{ $.items[*].status.loadBalancer}' | cut -b 26-68        
-      - destroy-environment                    
+          name: Smoke test.
+          command: |
+            cd .circleci/files          
+            export APP_INIT_IP=$(cat app-init-endpoint.txt)
+            export APP_FINAL_IP=$(cat app-final-endpoint.txt)
+            echo ${APP_INIT_IP} 
+            echo ${APP_FINAL_IP} 
+            sleep 1m
+            if (curl "http://${APP_INIT_IP}" | grep "Hello" && curl "http://${APP_FINAL_IP}" | grep "Reloaded")
+            then
+              return 0
+            else
+              return 1
+            fi              
+      #- destroy-environment           
 
 workflows:
   deployment:
@@ -158,5 +175,3 @@ workflows:
           requires: [build-docker]
       - app-smoke-test:   
           requires: [deploy-eks]
-      # - rolling-deployment-eks:   
-      #     requires: [app-smoke-test]
