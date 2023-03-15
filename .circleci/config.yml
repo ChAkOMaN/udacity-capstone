@@ -147,12 +147,13 @@ jobs:
           command: |
             aws eks update-kubeconfig --name capstone-eks-cluster-e51ed24 --region=us-east-1
             kubectl get services
-            #kubectl get services udacity-capstone-init --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-            api=$(kubectl get services udacity-capstone-init --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-            echo $api >> app-init-endpoint.txt
+            api1=$(kubectl get services udacity-capstone-init --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+            echo 'udacity-capstone-init: ' $api1
+            echo $api1 >> app-init-endpoint.txt            
             cat app-init-endpoint.txt
-            api=$(kubectl get services udacity-capstone-final --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-            echo $api >> app-final-endpoint.txt
+            api2=$(kubectl get services udacity-capstone-final --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+            echo 'udacity-capstone-final: ' $api2
+            echo $api2 >> app-final-endpoint.txt
             cat app-final-endpoint.txt            
       - persist_to_workspace:
           root: ~/
