@@ -201,4 +201,5 @@ workflows:
       # - app-smoke-test:   
       #     requires: [deploy-eks]
       - app-test
-      - app-smoke-test [app-test]
+      - app-smoke-test:
+            requires: [app-test]
