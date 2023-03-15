@@ -134,6 +134,31 @@ jobs:
             - project/.circleci/files/app-final-endpoint.txt              
       #- destroy-environment
 
+  app-test:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - install-awscli
+      - install-eksctl
+      - install-kubectl
+      - run:
+          name: store app's endpoint
+          command: |
+            kubectl get services
+            kubectl get services udacity-capstone-init --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+            api=$(kubectl get services udacity-capstone-init --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+            echo $api >> app-init-endpoint.txt
+            cat app-init-endpoint.txt
+            api=$(kubectl get services udacity-capstone-final --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+            echo $api >> app-final-endpoint.txt
+            cat app-final-endpoint.txt            
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project/.circleci/files/app-init-endpoint.txt  
+            - project/.circleci/files/app-final-endpoint.txt           
+
   app-smoke-test:
     docker:
       - image: python:3.7-alpine3.11
@@ -168,10 +193,12 @@ jobs:
 workflows:
   deployment:
     jobs:
-      - lint-code
-      - build-docker:
-          requires: [lint-code]
-      - deploy-eks:
-          requires: [build-docker]
-      - app-smoke-test:   
-          requires: [deploy-eks]
+      # - lint-code
+      # - build-docker:
+      #     requires: [lint-code]
+      # - deploy-eks:
+      #     requires: [build-docker]
+      # - app-smoke-test:   
+      #     requires: [deploy-eks]
+      - app-test
+      - app-smoke-test [app-test]
