@@ -140,19 +140,16 @@ jobs:
     steps:
       - checkout
       - install-awscli
-      - install-eksctl
       - install-kubectl
       - run:
           name: store app's endpoint
           command: |
             aws eks update-kubeconfig --name capstone-eks-cluster-e51ed24 --region=us-east-1
-            kubectl get services
+            #kubectl get services
             api1=$(kubectl get services udacity-capstone-init --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-            echo 'udacity-capstone-init: ' $api1
             echo $api1 >> .circleci/files/app-init-endpoint.txt            
             cat .circleci/files/app-init-endpoint.txt
             api2=$(kubectl get services udacity-capstone-final --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-            echo 'udacity-capstone-final: ' $api2
             echo $api2 >> .circleci/files/app-final-endpoint.txt
             cat .circleci/files/app-final-endpoint.txt            
       - persist_to_workspace:
@@ -183,14 +180,27 @@ jobs:
             export APP_FINAL_IP=$(cat app-final-endpoint.txt)
             echo ${APP_INIT_IP} 
             echo ${APP_FINAL_IP} 
-            sleep 1m
             if (curl "http://${APP_INIT_IP}" | grep "Hello" && curl "http://${APP_FINAL_IP}" | grep "Reloaded")
             then
               return 0
             else
               return 1
             fi              
-      #- destroy-environment           
+      #- destroy-environment        
+
+  cleanup:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - install-awscli
+      - install-kubectl
+      - run:
+          name: Get services in kubectl
+          command: |
+            aws eks update-kubeconfig --name capstone-eks-cluster-e51ed24 --region=us-east-1
+            kubectl get services
+            kubectl delete service udacity-capstone-init
 
 workflows:
   deployment:
@@ -205,3 +215,4 @@ workflows:
       - app-test
       - app-smoke-test:
             requires: [app-test]
+      - cleanup
