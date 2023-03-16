@@ -120,32 +120,8 @@ jobs:
       - run:
           name: store app's endpoint
           command: |
+            aws eks update-kubeconfig --name capstone-eks-cluster-${CIRCLE_WORKFLOW_ID:0:7} --region=us-east-1
             kubectl get services
-            api=$(kubectl get services udacity-capstone-init --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-            echo $api >> app-init-endpoint.txt
-            cat app-init-endpoint.txt
-            api=$(kubectl get services udacity-capstone-final --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-            echo $api >> app-final-endpoint.txt
-            cat app-final-endpoint.txt            
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - project/.circleci/files/app-init-endpoint.txt  
-            - project/.circleci/files/app-final-endpoint.txt              
-      #- destroy-environment
-
-  app-test:
-    docker:
-      - image: python:3.7-alpine3.11
-    steps:
-      - checkout
-      - install-awscli
-      - install-kubectl
-      - run:
-          name: store app's endpoint
-          command: |
-            aws eks update-kubeconfig --name capstone-eks-cluster-e51ed24 --region=us-east-1
-            #kubectl get services
             api1=$(kubectl get services udacity-capstone-init --output jsonpath='{.status.loadBalancer.ingress[0].hostname}')
             echo $api1 >> .circleci/files/app-init-endpoint.txt            
             cat .circleci/files/app-init-endpoint.txt
@@ -156,7 +132,7 @@ jobs:
           root: ~/
           paths:
             - project/.circleci/files/app-init-endpoint.txt  
-            - project/.circleci/files/app-final-endpoint.txt           
+            - project/.circleci/files/app-final-endpoint.txt         
 
   app-smoke-test:
     docker:
@@ -166,7 +142,6 @@ jobs:
       - attach_workspace:
           at: ~/      
       - install-awscli
-
       - run:
           name: Smoke test.
           command: |
@@ -180,8 +155,7 @@ jobs:
               return 0
             else
               return 1
-            fi              
-      #- destroy-environment        
+            fi                    
 
   cleanup:
     docker:
@@ -193,26 +167,24 @@ jobs:
       - run:
           name: Delete old service and deployment
           command: |
-            aws eks update-kubeconfig --name capstone-eks-cluster-e51ed24 --region=us-east-1
+            aws eks update-kubeconfig --name capstone-eks-cluster-${CIRCLE_WORKFLOW_ID:0:7} --region=us-east-1
             kubectl get services
+            kubectl delete service udacity-capstone-init
             kubectl get deployment
-            #kubectl delete service udacity-capstone-init
             kubectl delete deployment udacity-capstone
 
 workflows:
   deployment:
     jobs:
-      # - lint-code
-      # - build-docker:
-      #     requires: [lint-code]
-      # - deploy-eks:
-      #     requires: [build-docker]
-          # filters:
-          #   branches:
-          #     only: [master]      
-      # - app-smoke-test:   
-      #     requires: [deploy-eks]
-      # - app-test
-      # - app-smoke-test:
-      #       requires: [app-test]
-      - cleanup
+      - lint-code
+      - build-docker:
+          requires: [lint-code]
+      - deploy-eks:
+          requires: [build-docker]
+          filters:
+            branches:
+              only: [main]      
+      - app-smoke-test:   
+          requires: [deploy-eks]
+      - cleanup:
+          requires: [app-smoke-test]
