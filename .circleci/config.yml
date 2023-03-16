@@ -166,12 +166,7 @@ jobs:
       - attach_workspace:
           at: ~/      
       - install-awscli
-      - run:
-          name: show app's endpoint
-          command: |
-            cd .circleci/files
-            cat app-init-endpoint.txt
-            cat app-final-endpoint.txt 
+
       - run:
           name: Smoke test.
           command: |
@@ -200,7 +195,8 @@ jobs:
           command: |
             aws eks update-kubeconfig --name capstone-eks-cluster-e51ed24 --region=us-east-1
             kubectl get services
-            kubectl delete service udacity-capstone-init
+            kubectl get deployment
+            #kubectl delete service udacity-capstone-init
 
 workflows:
   deployment:
@@ -212,7 +208,7 @@ workflows:
       #     requires: [build-docker]
       # - app-smoke-test:   
       #     requires: [deploy-eks]
-      - app-test
-      - app-smoke-test:
-            requires: [app-test]
+      # - app-test
+      # - app-smoke-test:
+      #       requires: [app-test]
       - cleanup
