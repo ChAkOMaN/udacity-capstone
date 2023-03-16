@@ -1,6 +1,4 @@
 # Udacity-capstone
-### Status
-[![CircleCI](https://circleci.com/gh/ChAkOMaN/udacity-capstone/tree/main.svg?style=svg)](https://app.circleci.com/pipelines/github/ChAkOMaN/udacity-capstone/tree/main)
 
 ### Github
 https://github.com/ChAkOMaN/udacity-capstone
