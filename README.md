@@ -2,7 +2,7 @@
 ### Status
 [![CircleCI](https://circleci.com/gh/ChAkOMaN/udacity-capstone/tree/main.svg?style=svg)](https://app.circleci.com/pipelines/github/ChAkOMaN/udacity-capstone/tree/main)
 
-##GitHub:
+### Github
 https://github.com/ChAkOMaN/udacity-capstone
 
 ### Project Description
@@ -27,4 +27,4 @@ You will need to configure the following variables in your CircleCi project:
 - DOCKER_PASSWORD
 
 ### Load Balancer
-http://
+http://a2c1c00dc566642ceb51bc730b62c42e-119454378.us-east-1.elb.amazonaws.com
